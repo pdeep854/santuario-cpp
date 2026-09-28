@@ -1,0 +1,55 @@
+﻿{
+    "meta":  {
+                 "cpu":  "Snapdragon(R) X Elite - X1E78100 - Qualcomm(R) Oryon(TM) CPU",
+                 "host_arch":  "AMD64",
+                 "os_build":  "26100",
+                 "commit":  "ef633ae6662e877ead0c81134b791d64ced0f9fb",
+                 "branch":  "arm64-port",
+                 "timestamp":  "2026-09-28T12:03:17Z",
+                 "build_config":  "Release/ARM64",
+                 "toolchain_cl":  "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostarm64\\arm64\\cl.exe",
+                 "toolchain_cl_version":  "usage: cl [ option... ] filename... [ /link linkoption... ]",
+                 "command":  "xtest.exe",
+                 "working_dir":  "C:\\src\\wos-porter\\santuario-cpp\\Build\\ARM64\\VC15\\Release Minimal",
+                 "dll_path":  "C:\\src\\wos-porter\\santuario-cpp\\Build\\ARM64\\VC15\\Release Minimal;C:\\src\\vcpkg\\installed\\arm64-windows\\bin",
+                 "native_command":  "xtest.exe (run from build output directory with DLLs in PATH)"
+             },
+    "benchmarks":  [
+                       {
+                           "name":  "xtest_full_suite",
+                           "description":  "Full xtest test suite - XML digital signature and encryption using OpenSSL on ARM64",
+                           "runs":  [
+                                        {
+                                            "run":  1,
+                                            "duration_ms":  1000,
+                                            "exit_code":  0
+                                        },
+                                        {
+                                            "run":  2,
+                                            "duration_ms":  1066,
+                                            "exit_code":  0
+                                        },
+                                        {
+                                            "run":  3,
+                                            "duration_ms":  1681,
+                                            "exit_code":  0
+                                        }
+                                    ],
+                           "avg_duration_ms":  1249,
+                           "min_duration_ms":  1000,
+                           "max_duration_ms":  1681,
+                           "unit":  "ms",
+                           "pass":  true,
+                           "ok_checks":  89,
+                           "skipped_checks":  2,
+                           "failed_checks":  0
+                       }
+                   ],
+    "test_suite":  {
+                       "total_ok":  89,
+                       "total_skipped":  2,
+                       "total_failed":  0,
+                       "exit_code":  0,
+                       "all_passed":  true
+                   }
+}

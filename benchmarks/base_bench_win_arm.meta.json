@@ -1,0 +1,14 @@
+﻿{
+    "cpu":  "Snapdragon(R) X Elite - X1E78100 - Qualcomm(R) Oryon(TM) CPU",
+    "host_arch":  "AMD64",
+    "os_build":  "26100",
+    "commit":  "ef633ae6662e877ead0c81134b791d64ced0f9fb",
+    "branch":  "arm64-port",
+    "timestamp":  "2026-09-28T12:03:29Z",
+    "build_config":  "Release/ARM64",
+    "toolchain_cl":  "C:\\Program Files\\Microsoft Visual Studio\\18\\Community\\VC\\Tools\\MSVC\\14.51.36231\\bin\\Hostarm64\\arm64\\cl.exe",
+    "native_command":  "xtest.exe (from build output dir, DLLs in PATH)",
+    "original_files":  [
+                           "benchmarks\\xtest_run.txt"
+                       ]
+}
