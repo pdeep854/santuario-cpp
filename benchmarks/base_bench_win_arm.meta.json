@@ -1,6 +1,7 @@
 ﻿{
     "cpu":  "Snapdragon(R) X Elite - X1E78100 - Qualcomm(R) Oryon(TM) CPU",
-    "host_arch":  "AMD64",
+    "host_arch":  "ARM64",
+    "host_arch_note":  "ARM64 native (Snapdragon X Elite, WMI Architecture=12, OS='ARM 64-bit'); PROCESSOR_ARCHITECTURE env var showed AMD64 because PowerShell ran as x64 emulated process",
     "os_build":  "26100",
     "commit":  "ef633ae6662e877ead0c81134b791d64ced0f9fb",
     "branch":  "arm64-port",
