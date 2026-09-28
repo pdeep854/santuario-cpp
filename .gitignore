@@ -1,0 +1,10 @@
+
+# wos-porter agent scratch state (not part of the port)
+.copilot/
+
+# ARM64 build output
+Build/
+
+# ARM64 patch artifacts
+arm64-build-fixes.patch
+arm64-patches/
