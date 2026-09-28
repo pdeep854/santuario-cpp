@@ -45,6 +45,10 @@
 
 XERCES_CPP_NAMESPACE_USE
 
+#if defined(_M_ARM64) || defined(__aarch64__)
+#  include <arm_neon.h>
+#endif
+
 #ifdef XSEC_HAVE_XALAN
 
 // Xalan includes
@@ -566,6 +570,62 @@ safeBuffer c14nCleanText(safeBuffer &input) {
 	unsigned char c;
 
 	j = 0;
+
+#if defined(_M_ARM64) || defined(__aarch64__)
+	if (len >= 16) {
+		// Pre-size output buffer: worst case each byte expands to 5 chars (&amp;)
+		ret.resize(len * 5 + 17);
+		unsigned char* dst = &ret[0];
+		const uint8_t* src = input.rawBuffer();
+
+		const uint8x16_t v_amp = vdupq_n_u8((uint8_t)'&');
+		const uint8x16_t v_lt  = vdupq_n_u8((uint8_t)'<');
+		const uint8x16_t v_gt  = vdupq_n_u8((uint8_t)'>');
+		const uint8x16_t v_cr  = vdupq_n_u8((uint8_t)0x0D);
+
+		for (i = 0; i + 16 <= len; i += 16) {
+			uint8x16_t v = vld1q_u8(src + i);
+			// Check if any of the 16 bytes is a special char
+			uint8x16_t any_special = vorrq_u8(
+				vorrq_u8(vceqq_u8(v, v_amp), vceqq_u8(v, v_lt)),
+				vorrq_u8(vceqq_u8(v, v_gt),  vceqq_u8(v, v_cr))
+			);
+			if (vmaxvq_u8(any_special) == 0) {
+				// Common case: no special chars -- bulk store 16 bytes
+				vst1q_u8(dst + j, v);
+				j += 16;
+			} else {
+				// Rare case: at least one special char -- scalar fallback for chunk
+				for (XMLSize_t k = i; k < i + 16; ++k) {
+					c = src[k];
+					switch (c) {
+					case '&': dst[j++]='&'; dst[j++]='a'; dst[j++]='m'; dst[j++]='p'; dst[j++]=';'; break;
+					case '<': dst[j++]='&'; dst[j++]='l'; dst[j++]='t'; dst[j++]=';'; break;
+					case '>': dst[j++]='&'; dst[j++]='g'; dst[j++]='t'; dst[j++]=';'; break;
+					case 0xD: dst[j++]='&'; dst[j++]='#'; dst[j++]='x'; dst[j++]='D'; dst[j++]=';'; break;
+					default:  dst[j++] = c; break;
+					}
+				}
+			}
+		}
+		// Scalar tail (up to 15 remaining bytes)
+		for (; i < len; ++i) {
+			c = src[i];
+			switch (c) {
+			case '&': dst[j++]='&'; dst[j++]='a'; dst[j++]='m'; dst[j++]='p'; dst[j++]=';'; break;
+			case '<': dst[j++]='&'; dst[j++]='l'; dst[j++]='t'; dst[j++]=';'; break;
+			case '>': dst[j++]='&'; dst[j++]='g'; dst[j++]='t'; dst[j++]=';'; break;
+			case 0xD: dst[j++]='&'; dst[j++]='#'; dst[j++]='x'; dst[j++]='D'; dst[j++]=';'; break;
+			default:  dst[j++] = c; break;
+			}
+		}
+		dst[j] = '\0';
+		ret.setBufferType(safeBuffer::BUFFER_CHAR);
+		return ret;
+	}
+	// Fall through to scalar path for len < 16
+#endif
+
 	for (i = 0; i < len; ++i) {
 
 		c = input[i];
