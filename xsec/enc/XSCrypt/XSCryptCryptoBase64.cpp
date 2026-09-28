@@ -32,6 +32,10 @@
 #include <xsec/enc/XSCrypt/XSCryptCryptoBase64.hpp>
 #include <xsec/enc/XSECCryptoException.hpp>
 
+#if defined(_M_ARM64) || defined(__aarch64__)
+#  include <arm_neon.h>
+#endif
+
 // --------------------------------------------------------------------------------
 //           Lookup tables and macros
 // --------------------------------------------------------------------------------
@@ -78,7 +82,7 @@ unsigned char decodeCh(unsigned char c) {
 
 }
 
-void XSCryptCryptoBase64::canonicaliseInput(const unsigned char *inData, 
+void XSCryptCryptoBase64::canonicaliseInput(const unsigned char *inData,
 											unsigned int inLength) {
 
 	// Canonicalise the input buffer into m_inputBuffer
@@ -88,6 +92,67 @@ void XSCryptCryptoBase64::canonicaliseInput(const unsigned char *inData,
 	unsigned int i, j;
 	j = 0;
 
+#if defined(_M_ARM64) || defined(__aarch64__)
+	// Valid base64 chars: A-Z (0x41-0x5A), a-z (0x61-0x7A), 0-9 (0x30-0x39),
+	//                     + (0x2B), / (0x2F), = (0x3D)
+	// Use unsigned-range trick: (uint8_t)(x - lo) <= (hi - lo) is true iff lo <= x <= hi
+	const uint8x16_t v_capA  = vdupq_n_u8((uint8_t)'A');
+	const uint8x16_t v_25    = vdupq_n_u8(25u);          // 'Z' - 'A'
+	const uint8x16_t v_lowa  = vdupq_n_u8((uint8_t)'a');
+	const uint8x16_t v_dig0  = vdupq_n_u8((uint8_t)'0');
+	const uint8x16_t v_9     = vdupq_n_u8(9u);           // '9' - '0'
+	const uint8x16_t v_plus  = vdupq_n_u8((uint8_t)'+');
+	const uint8x16_t v_slash = vdupq_n_u8((uint8_t)'/');
+	const uint8x16_t v_eq    = vdupq_n_u8((uint8_t)'=');
+
+	for (i = 0; i + 16 <= inLength; i += 16) {
+		uint8x16_t v = vld1q_u8(inData + i);
+
+		// Test membership in each valid class
+		uint8x16_t isUpper = vcleq_u8(vsubq_u8(v, v_capA), v_25);
+		uint8x16_t isLower = vcleq_u8(vsubq_u8(v, v_lowa), v_25);
+		uint8x16_t isDigit = vcleq_u8(vsubq_u8(v, v_dig0), v_9);
+		uint8x16_t isB64   = vorrq_u8(
+			vorrq_u8(vorrq_u8(isUpper, isLower), isDigit),
+			vorrq_u8(vceqq_u8(v, v_plus),
+				vorrq_u8(vceqq_u8(v, v_slash), vceqq_u8(v, v_eq)))
+		);
+
+		if (vminvq_u8(isB64) != 0) {
+			// All 16 bytes are valid base64 — bulk copy to buf
+			if (j + 16 > 400) {
+				m_inputBuffer.sbMemcpyIn(m_remainingInput, buf, j);
+				m_remainingInput += j;
+				j = 0;
+			}
+			vst1q_u8(buf + j, v);
+			j += 16;
+		} else {
+			// At least one invalid byte — scalar fallback for this 16-byte chunk
+			for (unsigned int k = i; k < i + 16; ++k) {
+				if (IS_B64OE(inData[k])) {
+					buf[j++] = inData[k];
+					if (j == 400) {
+						m_inputBuffer.sbMemcpyIn(m_remainingInput, buf, 400);
+						m_remainingInput += 400;
+						j = 0;
+					}
+				}
+			}
+		}
+	}
+	// Scalar tail (< 16 remaining bytes)
+	for (; i < inLength; ++i) {
+		if (IS_B64OE(inData[i])) {
+			buf[j++] = inData[i];
+			if (j == 400) {
+				m_inputBuffer.sbMemcpyIn(m_remainingInput, buf, 400);
+				m_remainingInput += 400;
+				j = 0;
+			}
+		}
+	}
+#else
 	for (i = 0; i < inLength; ++i) {
 
 		if (IS_B64OE(inData[i])) {
@@ -102,6 +167,7 @@ void XSCryptCryptoBase64::canonicaliseInput(const unsigned char *inData,
 			}
 		}
 	}
+#endif
 
 	if (j > 0) {
 		m_inputBuffer.sbMemcpyIn(m_remainingInput, buf, j);
